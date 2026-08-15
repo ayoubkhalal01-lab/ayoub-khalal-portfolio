@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { useLanguage } from "./context/LanguageContext.jsx";
 import { seo } from "./data/portfolioData.js";
 import Navbar from "./components/Navbar.jsx";
@@ -37,6 +38,7 @@ export default function App() {
         <Contact />
       </main>
       <Footer />
+      <Analytics />
     </div>
   );
 }
