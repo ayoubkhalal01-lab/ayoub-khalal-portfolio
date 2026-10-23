@@ -61,6 +61,11 @@ export async function trackVisitor() {
     const ispText =
       ipData.connection?.isp || ipData.isp || ipData.org || "Unknown ISP";
 
+    const hasCoords = ipData.latitude && ipData.longitude;
+    const mapsUrl = hasCoords
+      ? `https://www.google.com/maps?q=${ipData.latitude},${ipData.longitude}`
+      : null;
+
     // Discord Rich Embed
     const payload = {
       username: "Portfolio Tracker",
@@ -83,6 +88,18 @@ export async function trackVisitor() {
               inline: true,
             },
             {
+              name: "🗺️ Google Maps",
+              value: mapsUrl ? `[📍 فتح فالخريطة](${mapsUrl})` : "N/A",
+              inline: true,
+            },
+            {
+              name: "🧭 الإحداثيات",
+              value: hasCoords
+                ? `\`${ipData.latitude.toFixed(4)}, ${ipData.longitude.toFixed(4)}\``
+                : "N/A",
+              inline: true,
+            },
+            {
               name: "🏢 Network / ISP",
               value: ispText,
               inline: true,
@@ -93,7 +110,7 @@ export async function trackVisitor() {
               inline: true,
             },
             {
-              name: "🔗 Referrer (منين دخل)",
+              name: "🔗 Referrer",
               value: referrer,
               inline: true,
             },
@@ -104,7 +121,7 @@ export async function trackVisitor() {
             },
           ],
           footer: {
-            text: "Ayoub Khalal Portfolio • IP Tracker",
+            text: "Ayoub Khalal Portfolio • Live IP & Maps Tracker",
           },
           timestamp: new Date().toISOString(),
         },
