@@ -17,8 +17,8 @@ export const personal = {
   linkedinUrl: "https://www.linkedin.com/in/ayoub-khalal-36a762392/",
   githubLabel: "ayoubkhalal01-lab",
   githubUrl: "https://github.com/ayoubkhalal01-lab",
-  cvFr: "/CV_Ayoub_Khalal_FR.pdf",
-  cvEn: "/CV_Ayoub_Khalal_EN.pdf",
+  cvFr: "/Ayoub_Khalal_Resume_FR.pdf",
+  cvEn: "/Ayoub_Khalal_Resume_EN.pdf",
 };
 
 export const nav = {
