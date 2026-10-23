@@ -1,23 +1,24 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
 export const AI_MODES = [
-  { id: "neural", nameEn: "Deep Learning Neural Network", nameFr: "Réseau de Neurones Deep Learning" },
-  { id: "ml_tree", nameEn: "Machine Learning Decision Clusters", nameFr: "Grappes & Arbres de Décision ML" },
-  { id: "loss", nameEn: "Gradient Descent Loss Landscape", nameFr: "Surface d'optimisation (Gradient Descent)" },
+  { id: "neural", nameEn: "Deep Learning Neural Network", nameFr: "Réseau de Neurones", nameAr: "شبكة عصبية عميقة", icon: "🧠" },
+  { id: "ml_tree", nameEn: "Machine Learning Clusters", nameFr: "Arbres & Grappes ML", nameAr: "عناقيد التعلم الآلي", icon: "🌲" },
+  { id: "loss", nameEn: "Optimization Landscape", nameFr: "Surface de Perte (Gradient)", nameAr: "سطح دالة الخسارة", icon: "📉" },
 ];
 
-function FullPageAIMesh({ modeIndex, scrollY }) {
+function FullPageAIMesh({ modeIndex }) {
   const pointsRef = useRef();
   const linesRef = useRef();
 
-  const NODE_COUNT = 1500;
+  const NODE_COUNT = 1400;
 
   // Generate 3D geometry states for Deep Learning & Machine Learning
   const { positions0, positions1, positions2, colors0, colors1, colors2, linePositions } = useMemo(() => {
-    const p0 = new Float32Array(NODE_COUNT * 3); // State 0: Deep Learning Neural Net (4 layers)
-    const p1 = new Float32Array(NODE_COUNT * 3); // State 1: Machine Learning Decision Tree & Clusters
+    const p0 = new Float32Array(NODE_COUNT * 3); // State 0: Deep Learning Neural Net
+    const p1 = new Float32Array(NODE_COUNT * 3); // State 1: ML Clusters
     const p2 = new Float32Array(NODE_COUNT * 3); // State 2: Loss Landscape Surface
 
     const c0 = new Float32Array(NODE_COUNT * 3);
@@ -28,13 +29,12 @@ function FullPageAIMesh({ modeIndex, scrollY }) {
     const gold = new THREE.Color("#c9a15c");
     const blue = new THREE.Color("#38bdf8");
     const purple = new THREE.Color("#a855f7");
-    const emerald = new THREE.Color("#34d399");
 
     const side = Math.floor(Math.sqrt(NODE_COUNT));
 
-    // Mode 0: Deep Learning Neural Network (Input, Hidden1, Hidden2, Output layers)
+    // Mode 0: Deep Learning Neural Network
     for (let i = 0; i < NODE_COUNT; i++) {
-      const layer = Math.floor((i / NODE_COUNT) * 4); // 0..3
+      const layer = Math.floor((i / NODE_COUNT) * 4);
       const inLayerIdx = i % (NODE_COUNT / 4);
       const layerX = (layer - 1.5) * 2.2;
 
@@ -51,178 +51,132 @@ function FullPageAIMesh({ modeIndex, scrollY }) {
       c0[i * 3 + 2] = col.b;
     }
 
-    // Mode 1: Machine Learning Decision Tree & Data Clusters
+    // Mode 1: Machine Learning Clusters
     for (let i = 0; i < NODE_COUNT; i++) {
-      // 3 Clusters representing Classification Groups + Trunk
       const cluster = i % 3;
       let cx = 0, cy = 0, cz = 0;
 
-      if (cluster === 0) { cx = -1.8; cy = 1.2; cz = 0.5; }
-      else if (cluster === 1) { cx = 1.8; cy = 1.0; cz = -0.5; }
-      else { cx = 0; cy = -1.2; cz = 0.8; }
+      if (cluster === 0) { cx = -1.8; cy = 1.0; cz = 0.5; }
+      else if (cluster === 1) { cx = 1.8; cy = 0.8; cz = -0.5; }
+      else { cx = 0.0; cy = -1.4; cz = 0.2; }
 
-      const spread = 0.9;
-      const u = Math.random() - 0.5;
-      const v = Math.random() - 0.5;
-      const w = Math.random() - 0.5;
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const r = Math.cbrt(Math.random()) * 0.95;
 
-      p1[i * 3] = cx + u * spread * 2;
-      p1[i * 3 + 1] = cy + v * spread * 2;
-      p1[i * 3 + 2] = cz + w * spread * 2;
+      p1[i * 3] = cx + r * Math.sin(phi) * Math.cos(theta);
+      p1[i * 3 + 1] = cy + r * Math.sin(phi) * Math.sin(theta);
+      p1[i * 3 + 2] = cz + r * Math.cos(phi);
 
-      const col = cluster === 0 ? teal : cluster === 1 ? emerald : gold;
+      const col = cluster === 0 ? teal : cluster === 1 ? gold : blue;
       c1[i * 3] = col.r;
       c1[i * 3 + 1] = col.g;
       c1[i * 3 + 2] = col.b;
     }
 
-    // Mode 2: Loss Landscape Surface (Bivariate Optimization Manifold)
-    const SPAN = 6.4;
-    for (let ix = 0; ix < side; ix++) {
-      for (let iz = 0; iz < side; iz++) {
-        const i = ix * side + iz;
-        if (i >= NODE_COUNT) break;
+    // Mode 2: Loss Landscape Surface
+    for (let i = 0; i < NODE_COUNT; i++) {
+      const xi = (i % side) / side;
+      const zi = Math.floor(i / side) / side;
 
-        const x = (ix / (side - 1) - 0.5) * SPAN;
-        const z = (iz / (side - 1) - 0.5) * SPAN;
-        const r2 = x * x + z * z;
-        const y = Math.exp(-r2 / 2.0) * 2.0 + Math.sin(x * 2.5) * Math.cos(z * 2.5) * 0.3 - 0.6;
+      const x = (xi - 0.5) * 4.4;
+      const z = (zi - 0.5) * 4.4;
+      const r = Math.sqrt(x * x + z * z);
+      const y = Math.sin(r * 2.8) / (r + 0.6) * 1.1;
 
-        p2[i * 3] = x;
-        p2[i * 3 + 1] = y;
-        p2[i * 3 + 2] = z;
+      p2[i * 3] = x;
+      p2[i * 3 + 1] = y - 0.5;
+      p2[i * 3 + 2] = z;
 
-        const col = teal.clone().lerp(gold, Math.min(1, (y + 0.8) / 2.2));
-        c2[i * 3] = col.r;
-        c2[i * 3 + 1] = col.g;
-        c2[i * 3 + 2] = col.b;
-      }
+      const normY = (y + 0.5) / 1.5;
+      const col = teal.clone().lerp(gold, Math.max(0, Math.min(1, normY)));
+      c2[i * 3] = col.r;
+      c2[i * 3 + 1] = col.g;
+      c2[i * 3 + 2] = col.b;
     }
 
-    // Synaptic Neural Lines connecting layers
-    const lineCoords = new Float32Array(300 * 6);
-    let lIdx = 0;
+    // Synaptic connections for Neural Net
+    const linePts = [];
     for (let l = 0; l < 3; l++) {
-      for (let k = 0; k < 100; k++) {
-        const x1 = (l - 1.5) * 2.2;
-        const x2 = (l + 1 - 1.5) * 2.2;
-        const a1 = (k / 100) * Math.PI * 2;
-        const a2 = ((k * 3) / 100) * Math.PI * 2;
+      for (let s = 0; s < 25; s++) {
+        const fromIdx = l * (NODE_COUNT / 4) + ((s * 7) % (NODE_COUNT / 4));
+        const toIdx = (l + 1) * (NODE_COUNT / 4) + ((s * 11) % (NODE_COUNT / 4));
 
-        lineCoords[lIdx * 6] = x1;
-        lineCoords[lIdx * 6 + 1] = Math.cos(a1) * 0.9;
-        lineCoords[lIdx * 6 + 2] = Math.sin(a1) * 0.9;
-
-        lineCoords[lIdx * 6 + 3] = x2;
-        lineCoords[lIdx * 6 + 4] = Math.cos(a2) * 0.9;
-        lineCoords[lIdx * 6 + 5] = Math.sin(a2) * 0.9;
-        lIdx++;
+        linePts.push(
+          p0[fromIdx * 3], p0[fromIdx * 3 + 1], p0[fromIdx * 3 + 2],
+          p0[toIdx * 3], p0[toIdx * 3 + 1], p0[toIdx * 3 + 2]
+        );
       }
     }
 
     return {
-      positions0: p0, positions1: p1, positions2: p2,
-      colors0: c0, colors1: c1, colors2: c2,
-      linePositions: lineCoords,
+      positions0: p0,
+      positions1: p1,
+      positions2: p2,
+      colors0: c0,
+      colors1: c1,
+      colors2: c2,
+      linePositions: new Float32Array(linePts),
     };
   }, []);
 
   const currentPos = useMemo(() => new Float32Array(NODE_COUNT * 3), []);
   const currentCol = useMemo(() => new Float32Array(NODE_COUNT * 3), []);
-  const transitionRef = useRef(1);
 
-  useEffect(() => {
-    transitionRef.current = 0;
-  }, [modeIndex]);
-
-  useFrame(({ clock }, delta) => {
-    const t = clock.getElapsedTime();
-    if (!pointsRef.current) return;
-
-    if (transitionRef.current < 1) {
-      transitionRef.current = Math.min(1, transitionRef.current + delta * 2.2);
-    }
-    const factor = transitionRef.current;
-    const ease = factor * factor * (3 - 2 * factor);
-
-    const m = modeIndex;
-    const prevM = (m - 1 + AI_MODES.length) % AI_MODES.length;
-
-    let targetP, sourceP, targetC, sourceC;
-    if (m === 0) { targetP = positions0; targetC = colors0; }
-    else if (m === 1) { targetP = positions1; targetC = colors1; }
-    else { targetP = positions2; targetC = colors2; }
-
-    if (prevM === 0) { sourceP = positions0; sourceC = colors0; }
-    else if (prevM === 1) { sourceP = positions1; sourceC = colors1; }
-    else { sourceP = positions2; sourceC = colors2; }
-
-    const posAttr = pointsRef.current.geometry.attributes.position;
-    const colAttr = pointsRef.current.geometry.attributes.color;
-
-    // Reacting to page scrolling down
-    const scrollOffset = (scrollY / 1000) * 0.8;
-
-    for (let i = 0; i < NODE_COUNT * 3; i += 3) {
-      const sx = sourceP[i], sy = sourceP[i + 1], sz = sourceP[i + 2];
-      const tx = targetP[i], ty = targetP[i + 1], tz = targetP[i + 2];
-
-      const cx = sx + (tx - sx) * ease;
-      const cy = sy + (ty - sy) * ease;
-      const cz = sz + (tz - sz) * ease;
-
-      // Dynamic oscillation wave depending on AI model
-      let wave = 0;
-      if (m === 0) wave = Math.sin(t * 2 + cx * 3) * 0.05;
-      if (m === 1) wave = Math.cos(t * 1.6 + cy * 2) * 0.07;
-      if (m === 2) wave = Math.sin(t * 1.5 + cx * 2 + cz * 2) * 0.08 * (cy + 1);
-
-      posAttr.array[i] = cx;
-      posAttr.array[i + 1] = cy + wave - scrollOffset * 0.4;
-      posAttr.array[i + 2] = cz;
-
-      colAttr.array[i] = sourceC[i] + (targetC[i] - sourceC[i]) * ease;
-      colAttr.array[i + 1] = sourceC[i + 1] + (targetC[i + 1] - sourceC[i + 1]) * ease;
-      colAttr.array[i + 2] = sourceC[i + 2] + (targetC[i + 2] - sourceC[i + 2]) * ease;
+  useFrame((state, delta) => {
+    let targetPos = positions0;
+    let targetCol = colors0;
+    if (modeIndex === 1) {
+      targetPos = positions1;
+      targetCol = colors1;
+    } else if (modeIndex === 2) {
+      targetPos = positions2;
+      targetCol = colors2;
     }
 
-    posAttr.needsUpdate = true;
-    colAttr.needsUpdate = true;
+    const t = Math.min(1, delta * 3.8);
 
-    // Continuous 3D rotation + scroll response down the page
-    pointsRef.current.rotation.y = t * 0.08 + scrollOffset * 0.5;
-    pointsRef.current.rotation.x = Math.sin(t * 0.2) * 0.15 + scrollOffset * 0.2;
+    for (let i = 0; i < NODE_COUNT * 3; i++) {
+      currentPos[i] += (targetPos[i] - currentPos[i]) * t;
+      currentCol[i] += (targetCol[i] - currentCol[i]) * t;
+    }
+
+    if (pointsRef.current) {
+      pointsRef.current.geometry.attributes.position.needsUpdate = true;
+      pointsRef.current.geometry.attributes.color.needsUpdate = true;
+      pointsRef.current.rotation.y += delta * 0.12;
+    }
 
     if (linesRef.current) {
-      linesRef.current.rotation.y = t * 0.08 + scrollOffset * 0.5;
-      linesRef.current.rotation.x = Math.sin(t * 0.2) * 0.15 + scrollOffset * 0.2;
+      linesRef.current.rotation.y += delta * 0.12;
     }
   });
 
   return (
     <group>
-      {/* Dynamic Synaptic Connection Lines for Neural Network (Mode 0) */}
       {modeIndex === 0 && (
-        <lineSegments ref={linesRef} position={[0, -0.2, 0]}>
+        <lineSegments ref={linesRef} position={[0, -0.1, 0]}>
           <bufferGeometry>
             <bufferAttribute attach="attributes-position" args={[linePositions, 3]} />
           </bufferGeometry>
-          <lineBasicMaterial color="#5eead4" transparent opacity={0.25} />
+          <lineBasicMaterial color="#5eead4" transparent opacity={0.22} />
         </lineSegments>
       )}
 
-      <points ref={pointsRef} position={[0, -0.2, 0]}>
+      <points ref={pointsRef} position={[0, -0.1, 0]}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[currentPos, 3]} />
           <bufferAttribute attach="attributes-color" args={[currentCol, 3]} />
         </bufferGeometry>
-        <pointsMaterial size={0.034} vertexColors sizeAttenuation transparent opacity={0.88} />
+        <pointsMaterial size={0.038} vertexColors sizeAttenuation transparent opacity={0.88} />
       </points>
     </group>
   );
 }
 
-export default function HeroVisual({ activeMode, onToggleMode }) {
+export default function HeroVisual({ activeMode }) {
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -231,15 +185,28 @@ export default function HeroVisual({ activeMode, onToggleMode }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Softly fades out the 3D visual as the user scrolls past the Hero section
+  const visualOpacity = Math.max(0.1, Math.min(1, 1 - scrollY / 700));
+
   return (
     <div
-      onClick={onToggleMode}
-      className="fixed inset-0 z-0 cursor-pointer select-none"
-      title="Normal click anywhere to morph 3D Deep Learning & Machine Learning visual"
+      className="fixed inset-0 z-0 pointer-events-auto transition-opacity duration-300"
+      style={{ opacity: visualOpacity }}
     >
-      <Canvas camera={{ position: [3.2, 2.0, 4.2], fov: 44 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }}>
-        <ambientLight intensity={0.8} />
-        <FullPageAIMesh modeIndex={activeMode} scrollY={scrollY} />
+      <Canvas
+        camera={{ position: [2.8, 1.8, 3.8], fov: 45 }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: true, alpha: true }}
+      >
+        <ambientLight intensity={0.9} />
+        <FullPageAIMesh modeIndex={activeMode} />
+        <OrbitControls
+          enableZoom={false}
+          autoRotate
+          autoRotateSpeed={0.5}
+          maxPolarAngle={Math.PI / 1.6}
+          minPolarAngle={Math.PI / 3.2}
+        />
       </Canvas>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowDown, Linkedin, Github, Mail, Download } from "lucide-react";
+import { ArrowDown, Linkedin, Github, Mail, Download, Sparkles } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext.jsx";
 import { personal, hero } from "../data/portfolioData.js";
 import { trackCvDownload } from "../utils/visitorTracker.js";
@@ -9,10 +9,6 @@ import HeroVisual, { AI_MODES } from "./HeroVisual.jsx";
 export default function Hero() {
   const { t, lang } = useLanguage();
   const [activeMode, setActiveMode] = useState(0);
-
-  const handleToggleMode = () => {
-    setActiveMode((prev) => (prev + 1) % AI_MODES.length);
-  };
 
   // Dynamic CV link based strictly on the current page language
   const activeCvFile = lang === "fr" ? personal.cvFr : personal.cvEn;
@@ -23,8 +19,8 @@ export default function Hero() {
 
   return (
     <section id="home" className="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden">
-      {/* 3D persistent background canvas — normal click anywhere on screen morphs AI 3D shape */}
-      <HeroVisual activeMode={activeMode} onToggleMode={handleToggleMode} />
+      {/* 3D Interactive Canvas with smooth OrbitControls */}
+      <HeroVisual activeMode={activeMode} />
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/10" />
 
@@ -41,13 +37,30 @@ export default function Hero() {
               {t(hero.eyebrow)}
             </span>
 
-            {/* Subtle click hint */}
-            <span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted border border-line rounded-full px-3 py-1 bg-ink/40 backdrop-blur-sm">
-              ✨ {t(hero.interactiveHint)}
-            </span>
+            {/* 3D Model Switcher Pills */}
+            <div className="inline-flex items-center rounded-full border border-line bg-ink/60 backdrop-blur-md p-1 gap-1">
+              {AI_MODES.map((mode, idx) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => setActiveMode(idx)}
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono transition-all cursor-pointer flex items-center gap-1 ${
+                    activeMode === idx
+                      ? "bg-teal text-ink font-semibold shadow-sm"
+                      : "text-muted hover:text-text"
+                  }`}
+                  title={mode.nameEn}
+                >
+                  <span>{mode.icon}</span>
+                  <span className="hidden sm:inline">
+                    {lang === "fr" ? mode.nameFr : lang === "ar" ? mode.nameAr : mode.nameEn}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          <h1 className="font-display mt-6 text-4xl sm:text-5xl md:text-6xl font-medium leading-[1.05] tracking-tight">
+          <h1 className="font-display mt-6 text-4xl sm:text-5xl md:text-6xl font-medium leading-[1.05] tracking-tight text-text">
             {personal.name}
           </h1>
 
@@ -77,7 +90,7 @@ export default function Hero() {
               title={`Download ${lang.toUpperCase()} CV`}
             >
               <Download size={16} />
-              {t(hero.downloadCv)} ({lang.toUpperCase()})
+              {t(hero.downloadCv)} ({lang === "ar" ? "EN/FR" : lang.toUpperCase()})
             </a>
 
             {/* Link to download the alternative language version */}

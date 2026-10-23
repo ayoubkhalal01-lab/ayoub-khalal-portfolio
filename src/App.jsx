@@ -10,6 +10,7 @@ import Education from "./components/Education.jsx";
 import Experience from "./components/Experience.jsx";
 import Skills from "./components/Skills.jsx";
 import Projects from "./components/Projects.jsx";
+import RiskSimulator from "./components/RiskSimulator.jsx";
 import CertsAndLanguages from "./components/CertsAndLanguages.jsx";
 import Contact from "./components/Contact.jsx";
 import Footer from "./components/Footer.jsx";
@@ -41,6 +42,7 @@ export default function App() {
         <Experience />
         <Skills />
         <Projects />
+        <RiskSimulator />
         <CertsAndLanguages />
         <Contact />
       </main>
