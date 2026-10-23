@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { useLanguage } from "./context/LanguageContext.jsx";
 import { seo } from "./data/portfolioData.js";
+import { trackVisitor } from "./utils/visitorTracker.js";
 import Navbar from "./components/Navbar.jsx";
 import Hero from "./components/Hero.jsx";
 import About from "./components/About.jsx";
@@ -22,6 +23,10 @@ export default function App() {
     const desc = document.querySelector('meta[name="description"]');
     if (desc) desc.setAttribute("content", t(seo.description));
   }, [lang, t]);
+
+  useEffect(() => {
+    trackVisitor();
+  }, []);
 
   return (
     <div className="relative">
