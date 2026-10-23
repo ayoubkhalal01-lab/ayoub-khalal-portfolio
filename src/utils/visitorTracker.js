@@ -1,44 +1,47 @@
 const DISCORD_WEBHOOK_URL = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
 
+// Helper to get cached or fresh IP info
+async function getVisitorInfo() {
+  let ipData = null;
+  try {
+    const res = await fetch("https://ipwho.is/");
+    if (res.ok) {
+      ipData = await res.json();
+    }
+  } catch {
+    try {
+      const fallbackRes = await fetch("https://api.ipify.org?format=json");
+      const fallbackData = await fallbackRes.json();
+      ipData = { ip: fallbackData.ip, country: "Unknown", city: "Unknown" };
+    } catch {
+      ipData = { ip: "Unknown" };
+    }
+  }
+  return ipData || { ip: "Unknown" };
+}
+
+function getDeviceInfo() {
+  const ua = navigator.userAgent;
+  if (/android/i.test(ua)) return "Android Phone/Tablet";
+  if (/iphone|ipad|ipod/i.test(ua)) return "iPhone / iPad";
+  if (/macintosh|mac os x/i.test(ua)) return "Mac";
+  if (/windows/i.test(ua)) return "Windows PC";
+  if (/linux/i.test(ua)) return "Linux PC";
+  return "Desktop / PC";
+}
+
+// 1. Automatic visitor tracker (once per session)
 export async function trackVisitor() {
   try {
     if (!DISCORD_WEBHOOK_URL) return;
 
-    // Avoid spamming on every refresh in the same session
     if (sessionStorage.getItem("tracked_session")) {
       return;
     }
     sessionStorage.setItem("tracked_session", "true");
 
-    // Fetch IP and location info from ipwho.is (free, HTTPS, CORS-friendly)
-    let ipData = null;
-    try {
-      const res = await fetch("https://ipwho.is/");
-      if (res.ok) {
-        ipData = await res.json();
-      }
-    } catch {
-      // Fallback to basic ipify if ipwho.is is blocked
-      try {
-        const fallbackRes = await fetch("https://api.ipify.org?format=json");
-        const fallbackData = await fallbackRes.json();
-        ipData = { ip: fallbackData.ip, country: "Unknown", city: "Unknown" };
-      } catch {
-        ipData = { ip: "Unknown" };
-      }
-    }
-
-    if (!ipData) return;
-
-    // Detect browser & device info
-    const ua = navigator.userAgent;
-    let device = "Desktop / PC";
-    if (/android/i.test(ua)) device = "Android Phone/Tablet";
-    else if (/iphone|ipad|ipod/i.test(ua)) device = "iPhone / iPad";
-    else if (/macintosh|mac os x/i.test(ua)) device = "Mac";
-    else if (/windows/i.test(ua)) device = "Windows PC";
-    else if (/linux/i.test(ua)) device = "Linux PC";
-
+    const ipData = await getVisitorInfo();
+    const device = getDeviceInfo();
     const referrer = document.referrer ? document.referrer : "Direct / Bookmarked";
     const currentPage = window.location.href;
     const isLocalhost =
@@ -66,7 +69,6 @@ export async function trackVisitor() {
       ? `https://www.google.com/maps?q=${ipData.latitude},${ipData.longitude}`
       : null;
 
-    // Discord Rich Embed
     const payload = {
       username: "Portfolio Tracker",
       avatar_url: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
@@ -75,7 +77,7 @@ export async function trackVisitor() {
           title: isLocalhost
             ? "🧪 Test Visit (Localhost)"
             : "🚨 New Visitor on Your Portfolio!",
-          color: isLocalhost ? 16776960 : 3447003, // Yellow for test, Blue for live
+          color: isLocalhost ? 16776960 : 3447003,
           fields: [
             {
               name: "🌐 IP Address",
@@ -134,7 +136,129 @@ export async function trackVisitor() {
       body: JSON.stringify(payload),
     });
   } catch (error) {
-    // Fail silently so it never interrupts the portfolio UI
     console.debug("Tracker:", error);
+  }
+}
+
+// 2. Track when someone downloads the CV
+export async function trackCvDownload(version = "EN") {
+  try {
+    if (!DISCORD_WEBHOOK_URL) return;
+
+    const ipData = await getVisitorInfo();
+    const countryEmoji = ipData.country_code
+      ? String.fromCodePoint(
+          ...[...ipData.country_code.toUpperCase()].map(
+            (c) => 127397 + c.charCodeAt(0)
+          )
+        )
+      : "🌍";
+
+    const locationText =
+      ipData.city && ipData.country
+        ? `${ipData.city}, ${ipData.country} ${countryEmoji}`
+        : "Unknown Location";
+
+    const payload = {
+      username: "Portfolio Tracker",
+      avatar_url: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+      embeds: [
+        {
+          title: "📄 CV Download Alert!",
+          description: `شخص قام بتحميل السيرة الذاتية النسخة: **${version}**`,
+          color: 65280, // Green
+          fields: [
+            {
+              name: "📑 النسخة (Version)",
+              value: `**${version}**`,
+              inline: true,
+            },
+            {
+              name: "🌐 IP Address",
+              value: `\`${ipData.ip || "Unknown"}\``,
+              inline: true,
+            },
+            {
+              name: "📍 الموقع (Location)",
+              value: locationText,
+              inline: true,
+            },
+          ],
+          footer: {
+            text: "Ayoub Khalal Portfolio • CV Tracker",
+          },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    };
+
+    await fetch(DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.debug("CV Tracker:", error);
+  }
+}
+
+// 3. Send contact form message directly to Discord
+export async function sendContactMessage({ name, email, message }) {
+  try {
+    if (!DISCORD_WEBHOOK_URL) return false;
+
+    const ipData = await getVisitorInfo();
+    const locationText =
+      ipData.city && ipData.country
+        ? `${ipData.city}, ${ipData.country}`
+        : "Unknown";
+
+    const payload = {
+      username: "Portfolio Contact Form",
+      avatar_url: "https://cdn-icons-png.flaticon.com/512/3062/3062634.png",
+      embeds: [
+        {
+          title: "✉️ رسالة جديدة من الموقع (Contact Form)!",
+          color: 16744272, // Orange/Coral
+          fields: [
+            {
+              name: "👤 الاسم (Name)",
+              value: name || "Anonymous",
+              inline: true,
+            },
+            {
+              name: "📧 البريد الإلكتروني (Email)",
+              value: email || "Not provided",
+              inline: true,
+            },
+            {
+              name: "📍 الموقع / IP",
+              value: `${locationText} (\`${ipData.ip || "Unknown"}\`)`,
+              inline: true,
+            },
+            {
+              name: "💬 الرسالة (Message)",
+              value: message || "No message content",
+              inline: false,
+            },
+          ],
+          footer: {
+            text: "Ayoub Khalal Portfolio • Direct Message",
+          },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    };
+
+    const res = await fetch(DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    return res.ok;
+  } catch (error) {
+    console.debug("Contact form error:", error);
+    return false;
   }
 }

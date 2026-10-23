@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowDown, Linkedin, Github, Mail, Download } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext.jsx";
 import { personal, hero } from "../data/portfolioData.js";
+import { trackCvDownload } from "../utils/visitorTracker.js";
 import HeroVisual, { AI_MODES } from "./HeroVisual.jsx";
 
 export default function Hero() {
@@ -71,6 +72,7 @@ export default function Hero() {
             <a
               href={activeCvFile}
               download={activeCvFileName}
+              onClick={() => trackCvDownload(lang === "fr" ? "French (FR)" : "English (EN)")}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-teal/50 bg-teal/10 text-sm font-medium text-teal hover:bg-teal hover:text-ink transition-all shadow-sm"
               title={`Download ${lang.toUpperCase()} CV`}
             >
@@ -82,6 +84,7 @@ export default function Hero() {
             <a
               href={altCvFile}
               download={altCvFileName}
+              onClick={() => trackCvDownload(lang === "fr" ? "English (EN)" : "French (FR)")}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-line bg-surface/60 text-xs font-mono text-muted hover:text-gold hover:border-gold/40 transition-all"
             >
               <Download size={13} />
