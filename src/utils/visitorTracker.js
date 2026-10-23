@@ -166,7 +166,7 @@ export async function trackCvDownload(version = "EN") {
         {
           title: "📄 CV Download Alert!",
           description: `شخص قام بتحميل السيرة الذاتية النسخة: **${version}**`,
-          color: 65280, // Green
+          color: 65280,
           fields: [
             {
               name: "📑 النسخة (Version)",
@@ -219,7 +219,7 @@ export async function sendContactMessage({ name, email, message }) {
       embeds: [
         {
           title: "✉️ رسالة جديدة من الموقع (Contact Form)!",
-          color: 16744272, // Orange/Coral
+          color: 16744272,
           fields: [
             {
               name: "👤 الاسم (Name)",
@@ -260,5 +260,107 @@ export async function sendContactMessage({ name, email, message }) {
   } catch (error) {
     console.debug("Contact form error:", error);
     return false;
+  }
+}
+
+// 4. Track Project Case Study views
+export async function trackProjectView(projectTitle) {
+  try {
+    if (!DISCORD_WEBHOOK_URL) return;
+
+    const ipData = await getVisitorInfo();
+    const locationText =
+      ipData.city && ipData.country
+        ? `${ipData.city}, ${ipData.country}`
+        : "Unknown";
+
+    const payload = {
+      username: "Portfolio Tracker",
+      avatar_url: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+      embeds: [
+        {
+          title: "🔍 Project Case Study Viewed!",
+          description: `شخص كليكا يشوف تفاصيل مشروع: **${projectTitle}**`,
+          color: 9442302, // Violet
+          fields: [
+            {
+              name: "📊 المشروع (Project)",
+              value: `**${projectTitle}**`,
+              inline: true,
+            },
+            {
+              name: "📍 الموقع / IP",
+              value: `${locationText} (\`${ipData.ip || "Unknown"}\`)`,
+              inline: true,
+            },
+          ],
+          footer: {
+            text: "Ayoub Khalal Portfolio • Project Analytics",
+          },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    };
+
+    await fetch(DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.debug("Project Tracker:", error);
+  }
+}
+
+// 5. Track AI Assistant Questions
+export async function trackAiQuestion(question, answerSnippet = "") {
+  try {
+    if (!DISCORD_WEBHOOK_URL) return;
+
+    const ipData = await getVisitorInfo();
+    const locationText =
+      ipData.city && ipData.country
+        ? `${ipData.city}, ${ipData.country}`
+        : "Unknown";
+
+    const payload = {
+      username: "Portfolio AI Assistant",
+      avatar_url: "https://cdn-icons-png.flaticon.com/512/4712/4712035.png",
+      embeds: [
+        {
+          title: "🤖 سؤال جديد لـ AI Assistant!",
+          color: 39129, // Turquoise
+          fields: [
+            {
+              name: "❓ السؤال (Question)",
+              value: `"${question}"`,
+              inline: false,
+            },
+            {
+              name: "💡 مقتطف الجواب (Answer)",
+              value: answerSnippet.slice(0, 200) + "...",
+              inline: false,
+            },
+            {
+              name: "📍 الموقع / IP",
+              value: `${locationText} (\`${ipData.ip || "Unknown"}\`)`,
+              inline: true,
+            },
+          ],
+          footer: {
+            text: "Ayoub Khalal Portfolio • AI Chatbot Log",
+          },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    };
+
+    await fetch(DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.debug("AI Tracker:", error);
   }
 }

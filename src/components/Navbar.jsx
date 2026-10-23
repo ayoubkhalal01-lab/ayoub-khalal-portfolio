@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Download } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext.jsx";
 import { nav, personal } from "../data/portfolioData.js";
+import { trackCvDownload } from "../utils/visitorTracker.js";
 
 const ids = ["home", "about", "education", "experience", "skills", "projects", "certifications", "contact"];
+const availableLangs = ["en", "fr", "ar"];
 
 export default function Navbar() {
   const { lang, setLang } = useLanguage();
@@ -34,7 +36,7 @@ export default function Navbar() {
     return () => observer.disconnect();
   }, []);
 
-  const labels = nav[lang];
+  const labels = nav[lang] || nav.en;
 
   return (
     <header
@@ -72,21 +74,23 @@ export default function Navbar() {
           <a
             href={lang === "fr" ? personal.cvFr : personal.cvEn}
             download={lang === "fr" ? "CV_Ayoub_Khalal_FR.pdf" : "CV_Ayoub_Khalal_EN.pdf"}
+            onClick={() => trackCvDownload(lang === "fr" ? "French (FR)" : "English (EN)")}
             className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-teal/30 bg-teal/10 text-xs font-mono text-teal hover:bg-teal hover:text-ink transition-colors"
             title="Download CV"
           >
             <Download size={13} />
-            CV {lang.toUpperCase()}
+            CV {lang === "ar" ? "EN/FR" : lang.toUpperCase()}
           </a>
 
+          {/* Desktop Language Switcher */}
           <div className="hidden sm:flex items-center rounded-full border border-line p-0.5 font-mono text-[11px]">
-            {["fr", "en"].map((l) => (
+            {availableLangs.map((l) => (
               <button
                 key={l}
                 onClick={() => setLang(l)}
                 aria-pressed={lang === l}
-                className={`relative px-2.5 py-1 rounded-full transition-colors ${
-                  lang === l ? "text-ink" : "text-muted hover:text-text"
+                className={`relative px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                  lang === l ? "text-ink font-semibold" : "text-muted hover:text-text"
                 }`}
               >
                 {lang === l && (
@@ -140,6 +144,7 @@ export default function Navbar() {
                   <a
                     href={personal.cvFr}
                     download="CV_Ayoub_Khalal_FR.pdf"
+                    onClick={() => trackCvDownload("French (FR)")}
                     className="flex-1 inline-flex items-center justify-center gap-2 py-2 rounded-lg border border-teal/40 bg-teal/10 text-xs font-mono text-teal"
                   >
                     <Download size={14} /> CV FR
@@ -147,6 +152,7 @@ export default function Navbar() {
                   <a
                     href={personal.cvEn}
                     download="CV_Ayoub_Khalal_EN.pdf"
+                    onClick={() => trackCvDownload("English (EN)")}
                     className="flex-1 inline-flex items-center justify-center gap-2 py-2 rounded-lg border border-gold/40 bg-gold/10 text-xs font-mono text-gold"
                   >
                     <Download size={14} /> CV EN
@@ -155,12 +161,15 @@ export default function Navbar() {
               </div>
 
               <div className="flex items-center gap-2 mt-6">
-                {["fr", "en"].map((l) => (
+                {availableLangs.map((l) => (
                   <button
                     key={l}
-                    onClick={() => setLang(l)}
-                    className={`px-4 py-1.5 rounded-full font-mono text-xs uppercase border ${
-                      lang === l ? "bg-teal text-ink border-teal" : "border-line text-muted"
+                    onClick={() => {
+                      setLang(l);
+                      setOpen(false);
+                    }}
+                    className={`flex-1 py-1.5 rounded-full font-mono text-xs uppercase border ${
+                      lang === l ? "bg-teal text-ink border-teal font-semibold" : "border-line text-muted"
                     }`}
                   >
                     {l}

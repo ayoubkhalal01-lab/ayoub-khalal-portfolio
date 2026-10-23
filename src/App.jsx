@@ -13,6 +13,7 @@ import Projects from "./components/Projects.jsx";
 import CertsAndLanguages from "./components/CertsAndLanguages.jsx";
 import Contact from "./components/Contact.jsx";
 import Footer from "./components/Footer.jsx";
+import AiChatbot from "./components/AiChatbot.jsx";
 
 export default function App() {
   const { t, lang } = useLanguage();
@@ -20,6 +21,7 @@ export default function App() {
   useEffect(() => {
     document.title = t(seo.title);
     document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
     const desc = document.querySelector('meta[name="description"]');
     if (desc) desc.setAttribute("content", t(seo.description));
   }, [lang, t]);
@@ -43,6 +45,7 @@ export default function App() {
         <Contact />
       </main>
       <Footer />
+      <AiChatbot />
       <Analytics />
     </div>
   );
